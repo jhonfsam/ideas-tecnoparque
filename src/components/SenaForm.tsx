@@ -31,7 +31,7 @@ const CATEGORIAS_SENA = [
 
 export default function SenaForm({ initialData, onSave, onCancel, isOnline }: SenaFormProps) {
   const [formData, setFormData] = useState<Omit<FormularioSena, 'id' | 'createdAt' | 'updatedAt' | 'status'>>(
-    initialData ? { ...initialData } : { ...INITIAL_FORM_STATE }
+    initialData ? { ...INITIAL_FORM_STATE, ...initialData } : { ...INITIAL_FORM_STATE }
   );
 
   const [step, setStep] = useState(1);
@@ -1021,7 +1021,7 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
               <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">¿En qué categoría se clasifica su idea? *</label>
               <select
                 name="categoriaIdea"
-                value={formData.categoriaIdea}
+                value={formData.categoriaIdea || ''}
                 onChange={handleChange}
                 className={`w-full text-xs px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
                   errors.categoriaIdea ? 'border-red-500 focus:ring-red-200' : 'border-neutral-300 focus:ring-[#39A900]/20 focus:border-[#39A900]'
@@ -1041,7 +1041,7 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
                   <label className="block text-xs font-bold text-neutral-700 uppercase">¿Viene de una convocatoria?</label>
                   <select
                     name="vieneConvocatoria"
-                    value={formData.vieneConvocatoria}
+                    value={formData.vieneConvocatoria || ''}
                     onChange={handleChange}
                     className="text-xs px-2 py-1 border border-neutral-300 rounded bg-white"
                   >
@@ -1054,7 +1054,7 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
                   <input
                     type="text"
                     name="descripcionConvocatoria"
-                    value={formData.descripcionConvocatoria}
+                    value={formData.descripcionConvocatoria || ''}
                     onChange={handleChange}
                     className="w-full text-xs px-2 py-1 border border-neutral-300 rounded focus:outline-none focus:ring-1 focus:ring-[#39A900]"
                     placeholder="Escriba el nombre de la convocatoria"
@@ -1067,7 +1067,7 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
                   <label className="block text-xs font-bold text-neutral-700 uppercase">¿Idea avalada por una entidad?</label>
                   <select
                     name="avaladaEntidad"
-                    value={formData.avaladaEntidad}
+                    value={formData.avaladaEntidad || ''}
                     onChange={handleChange}
                     className="text-xs px-2 py-1 border border-neutral-300 rounded bg-white"
                   >
@@ -1080,7 +1080,7 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
                   <input
                     type="text"
                     name="nombreEntidadAval"
-                    value={formData.nombreEntidadAval}
+                    value={formData.nombreEntidadAval || ''}
                     onChange={handleChange}
                     className="w-full text-xs px-2 py-1 border border-neutral-300 rounded focus:outline-none focus:ring-1 focus:ring-[#39A900]"
                     placeholder="Nombre de la institución que avala"
@@ -1096,7 +1096,7 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
                   type="checkbox"
                   name="aceptaTratamientoDatos"
                   id="aceptaTratamientoDatos"
-                  checked={formData.aceptaTratamientoDatos}
+                  checked={!!formData.aceptaTratamientoDatos}
                   onChange={handleChange}
                   className={`mt-1 h-4 w-4 rounded text-[#39A900] accent-[#39A900] ${
                     errors.aceptaTratamientoDatos ? 'ring-2 ring-red-500' : ''
