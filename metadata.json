@@ -1,0 +1,6 @@
+{
+  "name": "SENA Registro de Ideas - Offline",
+  "description": "Aplicativo offline-first con sincronización automática para la recopilación de datos de campo del formulario de Formulación y Registro de la Idea del SENA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "FormularioSena": {
+      "title": "FormularioSena",
+      "description": "SENA Form Entity describing user information and business idea",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the form"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of last update"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "pending", "synced"],
+          "description": "Current synchronization status"
+        },
+        "nombresCompletos": {
+          "type": "string",
+          "description": "Full name of the user"
+        },
+        "tipoDocumento": {
+          "type": "string"
+        },
+        "numeroDocumento": {
+          "type": "string"
+        },
+        "correo": {
+          "type": "string"
+        },
+        "celular": {
+          "type": "string"
+        },
+        "nombreIdea": {
+          "type": "string",
+          "description": "Name of the business idea"
+        },
+        "codigoIdea": {
+          "type": "string"
+        },
+        "descripcionIdea": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "createdAt", "updatedAt", "status", "nombresCompletos", "nombreIdea"]
+    }
+  },
+  "firestore": {
+    "formularios": {
+      "schema": "FormularioSena",
+      "description": "Collection of SENA registered forms and ideas"
+    }
+  }
+}
