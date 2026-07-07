@@ -71,9 +71,9 @@ export default function Dashboard({
 
   const filteredFormularios = formularios.filter(form => {
     const matchesSearch = 
-      form.nombreIdea.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      form.nombresCompletos.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      form.codigoIdea.toLowerCase().includes(searchTerm.toLowerCase());
+      (form.nombreIdea || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (form.nombresCompletos || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (form.codigoIdea || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = 
       statusFilter === 'all' || 

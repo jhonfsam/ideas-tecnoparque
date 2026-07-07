@@ -86,20 +86,20 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
     const stepErrors: Record<string, string> = {};
 
     if (currentStep === 1) {
-      if (!formData.nombresCompletos.trim()) stepErrors.nombresCompletos = 'Nombres completos requeridos';
+      if (!(formData.nombresCompletos || '').trim()) stepErrors.nombresCompletos = 'Nombres completos requeridos';
       if (!formData.tipoDocumento) stepErrors.tipoDocumento = 'Seleccione tipo de documento';
-      if (!formData.numeroDocumento.trim()) stepErrors.numeroDocumento = 'Número de documento requerido';
-      if (!formData.correo.trim()) {
+      if (!(formData.numeroDocumento || '').trim()) stepErrors.numeroDocumento = 'Número de documento requerido';
+      if (!(formData.correo || '').trim()) {
         stepErrors.correo = 'Correo requerido';
-      } else if (!/\S+@\S+\.\S+/.test(formData.correo)) {
+      } else if (!/\S+@\S+\.\S+/.test(formData.correo || '')) {
         stepErrors.correo = 'Correo inválido';
       }
-      if (!formData.celular.trim()) stepErrors.celular = 'Celular requerido';
+      if (!(formData.celular || '').trim()) stepErrors.celular = 'Celular requerido';
     }
 
     if (currentStep === 3) {
-      if (!formData.nombreIdea.trim()) stepErrors.nombreIdea = 'Nombre de la idea requerido';
-      if (!formData.descripcionIdea.trim()) stepErrors.descripcionIdea = 'Descripción requerida';
+      if (!(formData.nombreIdea || '').trim()) stepErrors.nombreIdea = 'Nombre de la idea requerido';
+      if (!(formData.descripcionIdea || '').trim()) stepErrors.descripcionIdea = 'Descripción requerida';
     }
 
     if (currentStep === 8) {
@@ -151,6 +151,124 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
     'Otros Datos',
     'Información Final'
   ];
+
+  const renderStep8 = () => {
+    try {
+      return (
+        <div className="space-y-4">
+          <h3 className="text-sm font-black text-neutral-800 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded bg-[#39A900]"></span>
+            8. Categorización Final de la Idea
+          </h3>
+
+          <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">¿En qué categoría se clasifica su idea? *</label>
+            <select
+              name="categoriaIdea"
+              value={formData.categoriaIdea || ''}
+              onChange={handleChange}
+              className={`w-full text-xs px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                errors.categoriaIdea ? 'border-red-500 focus:ring-red-200' : 'border-neutral-300 focus:ring-[#39A900]/20 focus:border-[#39A900]'
+              } bg-white`}
+            >
+              <option value="">Seleccione Categoría</option>
+              {CATEGORIAS_SENA.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            {errors.categoriaIdea && <p className="text-[10px] text-red-500 mt-0.5">{errors.categoriaIdea}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2 border p-3 rounded-lg bg-neutral-50/50">
+              <div className="flex justify-between items-center">
+                <label className="block text-xs font-bold text-neutral-700 uppercase">¿Viene de una convocatoria?</label>
+                <select
+                  name="vieneConvocatoria"
+                  value={formData.vieneConvocatoria || ''}
+                  onChange={handleChange}
+                  className="text-xs px-2 py-1 border border-neutral-300 rounded bg-white"
+                >
+                  <option value="">Seleccione</option>
+                  <option value="Sí">Sí</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              {formData.vieneConvocatoria === 'Sí' && (
+                <input
+                  type="text"
+                  name="descripcionConvocatoria"
+                  value={formData.descripcionConvocatoria || ''}
+                  onChange={handleChange}
+                  className="w-full text-xs px-2 py-1 border border-neutral-300 rounded focus:outline-none focus:ring-1 focus:ring-[#39A900]"
+                  placeholder="Escriba el nombre de la convocatoria"
+                />
+              )}
+            </div>
+
+            <div className="space-y-2 border p-3 rounded-lg bg-neutral-50/50">
+              <div className="flex justify-between items-center">
+                <label className="block text-xs font-bold text-neutral-700 uppercase">¿Idea avalada por una entidad?</label>
+                <select
+                  name="avaladaEntidad"
+                  value={formData.avaladaEntidad || ''}
+                  onChange={handleChange}
+                  className="text-xs px-2 py-1 border border-neutral-300 rounded bg-white"
+                >
+                  <option value="">Seleccione</option>
+                  <option value="Sí">Sí</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              {formData.avaladaEntidad === 'Sí' && (
+                <input
+                  type="text"
+                  name="nombreEntidadAval"
+                  value={formData.nombreEntidadAval || ''}
+                  onChange={handleChange}
+                  className="w-full text-xs px-2 py-1 border border-neutral-300 rounded focus:outline-none focus:ring-1 focus:ring-[#39A900]"
+                  placeholder="Nombre de la institución que avala"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Official Data Treatment Consent */}
+          <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                name="aceptaTratamientoDatos"
+                id="aceptaTratamientoDatos"
+                checked={!!formData.aceptaTratamientoDatos}
+                onChange={handleChange}
+                className={`mt-1 h-4 w-4 rounded text-[#39A900] accent-[#39A900] ${
+                  errors.aceptaTratamientoDatos ? 'ring-2 ring-red-500' : ''
+                }`}
+              />
+              <div className="text-[10px] leading-tight text-neutral-600">
+                <label htmlFor="aceptaTratamientoDatos" className="font-extrabold text-neutral-800 block mb-1 cursor-pointer uppercase">
+                  Autorización de Protección y Tratamiento de Datos Personales del SENA *
+                </label>
+                Apreciado (usuario, empresario, aprendiz, ciudadano, etc.), de conformidad con lo establecido en la ley de protección de datos personales del Servicio Nacional de Aprendizaje (SENA), autorizo que la finalidad y tratamiento de los datos personales requeridos a través de este formulario offline es exclusivamente para la gestión, prestación y personalización de los servicios de asesoría de Tecnoparque Colombia.
+              </div>
+            </div>
+            {errors.aceptaTratamientoDatos && (
+              <p className="text-[10px] text-red-500 font-bold">{errors.aceptaTratamientoDatos}</p>
+            )}
+          </div>
+        </div>
+      );
+    } catch (e) {
+      console.error('Error rendering Step 8:', e);
+      return (
+        <div className="p-4 border border-red-500 rounded bg-red-50 text-red-700 text-xs font-mono space-y-2">
+          <p className="font-bold">Error rendering Step 8:</p>
+          <p>{(e as Error).message}</p>
+        </div>
+      );
+    }
+  };
 
   return (
     <div id="sena-form-root" className="bg-white rounded-2xl shadow-xl border border-neutral-200 overflow-hidden max-w-4xl mx-auto">
@@ -1014,111 +1132,7 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
         )}
 
         {/* STEP 8: INFORMACIÓN FINAL DE LA IDEA */}
-        {step === 8 && (
-          <div className="space-y-4">
-            <h3 className="text-sm font-black text-neutral-800 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded bg-[#39A900]"></span>
-              8. Categorización Final de la Idea
-            </h3>
-
-            <div>
-              <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">¿En qué categoría se clasifica su idea? *</label>
-              <select
-                name="categoriaIdea"
-                value={formData.categoriaIdea || ''}
-                onChange={handleChange}
-                className={`w-full text-xs px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                  errors.categoriaIdea ? 'border-red-500 focus:ring-red-200' : 'border-neutral-300 focus:ring-[#39A900]/20 focus:border-[#39A900]'
-                } bg-white`}
-              >
-                <option value="">Seleccione Categoría</option>
-                {CATEGORIAS_SENA.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              {errors.categoriaIdea && <p className="text-[10px] text-red-500 mt-0.5">{errors.categoriaIdea}</p>}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2 border p-3 rounded-lg bg-neutral-50/50">
-                <div className="flex justify-between items-center">
-                  <label className="block text-xs font-bold text-neutral-700 uppercase">¿Viene de una convocatoria?</label>
-                  <select
-                    name="vieneConvocatoria"
-                    value={formData.vieneConvocatoria || ''}
-                    onChange={handleChange}
-                    className="text-xs px-2 py-1 border border-neutral-300 rounded bg-white"
-                  >
-                    <option value="">Seleccione</option>
-                    <option value="Sí">Sí</option>
-                    <option value="No">No</option>
-                  </select>
-                </div>
-                {formData.vieneConvocatoria === 'Sí' && (
-                  <input
-                    type="text"
-                    name="descripcionConvocatoria"
-                    value={formData.descripcionConvocatoria || ''}
-                    onChange={handleChange}
-                    className="w-full text-xs px-2 py-1 border border-neutral-300 rounded focus:outline-none focus:ring-1 focus:ring-[#39A900]"
-                    placeholder="Escriba el nombre de la convocatoria"
-                  />
-                )}
-              </div>
-
-              <div className="space-y-2 border p-3 rounded-lg bg-neutral-50/50">
-                <div className="flex justify-between items-center">
-                  <label className="block text-xs font-bold text-neutral-700 uppercase">¿Idea avalada por una entidad?</label>
-                  <select
-                    name="avaladaEntidad"
-                    value={formData.avaladaEntidad || ''}
-                    onChange={handleChange}
-                    className="text-xs px-2 py-1 border border-neutral-300 rounded bg-white"
-                  >
-                    <option value="">Seleccione</option>
-                    <option value="Sí">Sí</option>
-                    <option value="No">No</option>
-                  </select>
-                </div>
-                {formData.avaladaEntidad === 'Sí' && (
-                  <input
-                    type="text"
-                    name="nombreEntidadAval"
-                    value={formData.nombreEntidadAval || ''}
-                    onChange={handleChange}
-                    className="w-full text-xs px-2 py-1 border border-neutral-300 rounded focus:outline-none focus:ring-1 focus:ring-[#39A900]"
-                    placeholder="Nombre de la institución que avala"
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Official Data Treatment Consent */}
-            <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 space-y-3">
-              <div className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  name="aceptaTratamientoDatos"
-                  id="aceptaTratamientoDatos"
-                  checked={!!formData.aceptaTratamientoDatos}
-                  onChange={handleChange}
-                  className={`mt-1 h-4 w-4 rounded text-[#39A900] accent-[#39A900] ${
-                    errors.aceptaTratamientoDatos ? 'ring-2 ring-red-500' : ''
-                  }`}
-                />
-                <div className="text-[10px] leading-tight text-neutral-600">
-                  <label htmlFor="aceptaTratamientoDatos" className="font-extrabold text-neutral-800 block mb-1 cursor-pointer uppercase">
-                    Autorización de Protección y Tratamiento de Datos Personales del SENA *
-                  </label>
-                  Apreciado (usuario, empresario, aprendiz, ciudadano, etc.), de conformidad con lo establecido en la ley de protección de datos personales del Servicio Nacional de Aprendizaje (SENA), autorizo que la finalidad y tratamiento de los datos personales requeridos a través de este formulario offline es exclusivamente para la gestión, prestación y personalización de los servicios de asesoría de Tecnoparque Colombia.
-                </div>
-              </div>
-              {errors.aceptaTratamientoDatos && (
-                <p className="text-[10px] text-red-500 font-bold">{errors.aceptaTratamientoDatos}</p>
-              )}
-            </div>
-          </div>
-        )}
+        {step === 8 && renderStep8()}
 
         {/* Form Footer Action Buttons */}
         <div className="pt-4 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-4">
