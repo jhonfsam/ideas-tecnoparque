@@ -277,7 +277,7 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-[#39A900] text-white text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded">
-              SENA COLOFLINE
+              TECNOPARQUE
             </span>
             <span className="text-neutral-400 text-xs">Formato: GCDTP-F-013</span>
           </div>
