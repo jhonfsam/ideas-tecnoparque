@@ -282,7 +282,7 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
             <span className="text-neutral-400 text-xs">Formato: GCDTP-F-013</span>
           </div>
           <h2 className="text-xl font-bold tracking-tight text-white uppercase">
-            {initialData ? 'Editar Formulación de Idea' : 'Nueva Formulación y Registro de Idea'}
+            {initialData ? 'Editar Formulación de Idea' : 'Formulación y Registro de Idea'}
           </h2>
         </div>
 
