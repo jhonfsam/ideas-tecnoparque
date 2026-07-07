@@ -128,6 +128,10 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (step < 8) {
+      handleNext();
+      return;
+    }
     if (validateStep(8)) {
       // Complete form goes to pending queue to be synced automatically
       onSave(formData, 'pending');
@@ -1140,6 +1144,7 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
 
             {step < 8 ? (
               <button
+                key="btn-next"
                 type="button"
                 onClick={handleNext}
                 className="w-full sm:w-auto flex items-center justify-center gap-1 px-6 py-2 bg-[#212121] hover:bg-neutral-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
@@ -1149,6 +1154,7 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
               </button>
             ) : (
               <button
+                key="btn-submit"
                 type="submit"
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 bg-[#39A900] hover:bg-[#2e8800] text-white rounded-xl text-xs font-black transition-all shadow-md cursor-pointer"
               >
