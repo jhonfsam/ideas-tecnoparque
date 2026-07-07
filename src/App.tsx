@@ -746,7 +746,7 @@ export default function App() {
           </div>
           <div className="border-l border-neutral-700 pl-3">
             <span className="text-[10px] font-black tracking-widest text-[#39A900] block flex items-center gap-1.5">
-              TECNOPARQUE COLOMBIA
+              TECNOPARQUE NODO SOCORRO
               {role === 'admin' && (
                 <span className="bg-[#39A900]/20 text-[#39A900] text-[8px] font-bold px-1.5 py-0.5 rounded border border-[#39A900]/40 uppercase tracking-normal">
                   ADMINISTRADOR
