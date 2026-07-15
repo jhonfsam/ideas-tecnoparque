@@ -566,7 +566,7 @@ export default function FormDetail({ formulario, onBack, onExportSingleJson }: F
             <div>Fecha Creación: {new Date(formulario.createdAt).toLocaleString()}</div>
           </div>
           <div className="text-right">
-            <div>Tecnoparque Nodo Socorro - SENA</div>
+            <div>Tecnoparque Colombia - SENA</div>
             <div>Estado Sincronización: {formulario.status.toUpperCase()}</div>
           </div>
         </div>

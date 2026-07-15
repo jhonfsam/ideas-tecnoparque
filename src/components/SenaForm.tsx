@@ -277,12 +277,12 @@ export default function SenaForm({ initialData, onSave, onCancel, isOnline }: Se
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-[#39A900] text-white text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded">
-              TECNOPARQUE
+              SENA COLOFLINE
             </span>
             <span className="text-neutral-400 text-xs">Formato: GCDTP-F-013</span>
           </div>
           <h2 className="text-xl font-bold tracking-tight text-white uppercase">
-            {initialData ? 'Editar Formulación de Idea' : 'Formulación y Registro de Idea'}
+            {initialData ? 'Editar Formulación de Idea' : 'Nueva Formulación y Registro de Idea'}
           </h2>
         </div>
 

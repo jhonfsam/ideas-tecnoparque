@@ -16,7 +16,9 @@ import {
   Unlock,
   Shield,
   LogOut,
-  User
+  User,
+  AlertTriangle,
+  Trash2
 } from 'lucide-react';
 import { FormularioSena, SyncLog, INITIAL_FORM_STATE, SyncStatus } from './types';
 import Dashboard from './components/Dashboard';
@@ -24,7 +26,7 @@ import SenaForm from './components/SenaForm';
 import FormDetail from './components/FormDetail';
 import SyncLogConsole from './components/SyncLogConsole';
 import { initAuth, googleSignIn, logout } from './googleAuth';
-import { findSpreadsheet, createSpreadsheet, syncFormToSheet, syncAllToSheet, GoogleSpreadsheetInfo, syncFormToScript } from './googleSheetsService';
+import { findSpreadsheet, createSpreadsheet, syncFormToSheet, syncAllToSheet, GoogleSpreadsheetInfo, syncFormToScript, fetchFormsFromSheet } from './googleSheetsService';
 
 // Seed initial forms for immediate visual satisfaction
 const SEED_FORMULARIOS: FormularioSena[] = [
@@ -189,6 +191,39 @@ export default function App() {
     return (saved as 'public' | 'admin') || 'public';
   });
 
+  // Hidden admin access logic (5 clicks on logo)
+  const [logoClickCount, setLogoClickCount] = useState(0);
+  const logoResetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleLogoClick = () => {
+    if (logoResetTimeoutRef.current) {
+      clearTimeout(logoResetTimeoutRef.current);
+    }
+    setLogoClickCount(prev => {
+      const next = prev + 1;
+      if (next >= 5) {
+        setLoginError('');
+        setAdminPassword('');
+        setShowAdminLogin(true);
+        return 0;
+      }
+      return next;
+    });
+    logoResetTimeoutRef.current = setTimeout(() => {
+      setLogoClickCount(0);
+    }, 3000);
+  };
+
+  // Check URL query parameters for admin access
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === 'true' || params.get('login') === 'true' || params.get('admin') === '1') {
+      setLoginError('');
+      setAdminPassword('');
+      setShowAdminLogin(true);
+    }
+  }, []);
+
   // Navigation states: 'dashboard' | 'form' | 'detail'
   const [currentView, setCurrentView] = useState<'dashboard' | 'form' | 'detail'>(() => {
     const savedRole = safeStorage.getItem('sena_user_role');
@@ -199,6 +234,9 @@ export default function App() {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+
+  // Delete confirmation modal state
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Public submission success state
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
@@ -376,13 +414,92 @@ export default function App() {
     }
 
     setIsGSyncing(true);
-    addLog('info', 'Iniciando sincronización completa de la base de datos a Google Sheets...');
+    addLog('info', 'Iniciando sincronización bidireccional con Google Sheets...');
     try {
-      const count = await syncAllToSheet(googleToken, spreadsheetInfo.id, formularios);
-      addLog('success', `[EXCEL] Sincronización masiva completada: ${count} registros transmitidos a Google Sheets.`);
+      // 1. Obtener registros actuales de Google Sheets
+      const sheetForms = await fetchFormsFromSheet(googleToken, spreadsheetInfo.id);
+      addLog('info', `[EXCEL] Descargados ${sheetForms.length} registros desde la hoja de cálculo de Google.`);
+
+      // 2. Realizar combinación de registros
+      const localForms = [...formularios];
+      const mergedForms: FormularioSena[] = [...localForms];
+
+      let importedCount = 0;
+      let updatedLocalCount = 0;
+      let uploadedCount = 0;
+
+      // Un conjunto de IDs que existen en el Google Sheet para saber si están presentes
+      const sheetIdSet = new Set(sheetForms.map(f => f.id));
+      const sheetCodeSet = new Set(sheetForms.map(f => f.codigoIdea).filter(Boolean));
+
+      // Paso A: Importar y actualizar desde Google Sheets a local
+      for (const sheetForm of sheetForms) {
+        const localIndex = mergedForms.findIndex(f => f.id === sheetForm.id || (f.codigoIdea && f.codigoIdea === sheetForm.codigoIdea));
+        if (localIndex === -1) {
+          // No existe localmente, se importa
+          mergedForms.push(sheetForm);
+          importedCount++;
+        } else {
+          // Existe localmente, actualizamos si no es un borrador local activo o pendiente
+          const localForm = mergedForms[localIndex];
+          if (localForm.status !== 'draft') {
+            mergedForms[localIndex] = {
+              ...localForm,
+              ...sheetForm,
+              status: 'synced'
+            };
+            updatedLocalCount++;
+          }
+        }
+      }
+
+      // Paso B: Subir registros locales que no estén en Google Sheets o estén pendientes
+      // Registros que necesitan subirse:
+      // - Cualquier registro con estado 'pending'
+      // - Cualquier registro con estado 'synced' que no exista en la hoja de cálculo (por si fue borrado en la hoja o es una nueva hoja)
+      const formsToUpload = mergedForms.filter(f => 
+        f.status === 'pending' || 
+        (f.status === 'synced' && !sheetIdSet.has(f.id) && !sheetCodeSet.has(f.codigoIdea))
+      );
+
+      if (formsToUpload.length > 0) {
+        addLog('info', `[EXCEL] Subiendo ${formsToUpload.length} registros locales faltantes a Google Sheets...`);
+        for (const fToUpload of formsToUpload) {
+          const now = new Date().toISOString();
+          const syncedForm = {
+            ...fToUpload,
+            status: 'synced' as const,
+            syncAttemptedAt: now
+          };
+          
+          await syncFormToSheet(googleToken, spreadsheetInfo.id, syncedForm);
+          
+          const idx = mergedForms.findIndex(f => f.id === fToUpload.id);
+          if (idx !== -1) {
+            mergedForms[idx] = syncedForm;
+          }
+          uploadedCount++;
+        }
+      }
+
+      // 3. Ordenar cronológicamente (más recientes primero)
+      mergedForms.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      // 4. Actualizar estados locales y localStorage
+      setFormularios(mergedForms);
+      safeStorage.setItem('sena_formularios', JSON.stringify(mergedForms));
+
+      addLog('success', `[SINCRO] Sincronización bidireccional completada con éxito.`);
+      if (importedCount > 0) addLog('success', `  - ${importedCount} registros nuevos importados al dispositivo.`);
+      if (updatedLocalCount > 0) addLog('info', `  - ${updatedLocalCount} registros actualizados con la versión de Google Sheets.`);
+      if (uploadedCount > 0) addLog('success', `  - ${uploadedCount} registros locales sincronizados en Google Sheets.`);
+      if (importedCount === 0 && updatedLocalCount === 0 && uploadedCount === 0) {
+        addLog('success', '  - ¡Todos los registros de este dispositivo y Google Sheets coinciden perfectamente!');
+      }
+
     } catch (error: any) {
       console.error(error);
-      addLog('error', `Error en sincronización masiva: ${error.message}`);
+      addLog('error', `Error durante la sincronización bidireccional: ${error.message || error}`);
     } finally {
       setIsGSyncing(false);
     }
@@ -602,8 +719,14 @@ export default function App() {
   const handleDeleteTrigger = (id: string) => {
     const formToDelete = formularios.find(f => f.id === id);
     if (!formToDelete) return;
+    setDeleteConfirmId(id);
+  };
 
-    if (confirm(`¿Está seguro de eliminar el registro de idea: "${formToDelete.nombreIdea || 'Sin nombre'}"?`)) {
+  const handleConfirmDelete = () => {
+    if (!deleteConfirmId) return;
+    const id = deleteConfirmId;
+    const formToDelete = formularios.find(f => f.id === id);
+    if (formToDelete) {
       setFormularios(prev => prev.filter(f => f.id !== id));
       addLog('warning', `Eliminado formulario #${formToDelete.codigoIdea} del almacén local.`);
 
@@ -612,6 +735,7 @@ export default function App() {
         setCurrentView('dashboard');
       }
     }
+    setDeleteConfirmId(null);
   };
 
   const handleAdminLogout = () => {
@@ -714,7 +838,7 @@ export default function App() {
       
       {/* Top Main Navigation Header (Always Visible except when printing) */}
       <header id="main-header" className="bg-[#212121] border-b-4 border-[#39A900] text-white py-3 px-4 md:px-8 shadow-md flex items-center justify-between sticky top-0 z-50 print:hidden select-none">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 cursor-pointer" onClick={handleLogoClick} title="Doble clic o 5 clics para ingresar como administrador">
           <div className="bg-white p-1 rounded-lg flex items-center justify-center w-10 h-10 select-none shadow-sm">
             <svg viewBox="0 0 100 100" className="w-8 h-8" fill="none" xmlns="http://www.w3.org/2000/svg">
               {/* Head */}
@@ -746,7 +870,7 @@ export default function App() {
           </div>
           <div className="border-l border-neutral-700 pl-3">
             <span className="text-[10px] font-black tracking-widest text-[#39A900] block flex items-center gap-1.5">
-              TECNOPARQUE NODO SOCORRO
+              TECNOPARQUE COLOMBIA
               {role === 'admin' && (
                 <span className="bg-[#39A900]/20 text-[#39A900] text-[8px] font-bold px-1.5 py-0.5 rounded border border-[#39A900]/40 uppercase tracking-normal">
                   ADMINISTRADOR
@@ -758,7 +882,7 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-1.5 text-xs text-neutral-400 bg-neutral-900 px-3 py-1.5 rounded-lg border border-neutral-800">
+          <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-neutral-400 bg-neutral-900 px-2 sm:px-3 py-1.5 rounded-lg border border-neutral-800">
             {isOnline ? (
               <>
                 <Wifi className="w-3.5 h-3.5 text-[#39A900]" />
@@ -1011,6 +1135,75 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {deleteConfirmId && (() => {
+        const formToDelete = formularios.find(f => f.id === deleteConfirmId);
+        if (!formToDelete) return null;
+        return (
+          <div className="fixed inset-0 bg-neutral-950/70 backdrop-blur-sm z-[110] flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-white rounded-2xl shadow-2xl border border-neutral-100 max-w-md w-full overflow-hidden transform scale-100 transition-all">
+              {/* Header */}
+              <div className="bg-red-600 border-b-4 border-red-800 text-white px-6 py-4 flex justify-between items-center select-none">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  <span className="font-extrabold tracking-tight text-sm uppercase">Confirmar Eliminación</span>
+                </div>
+                <button 
+                  onClick={() => setDeleteConfirmId(null)}
+                  className="text-red-200 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-4">
+                <div className="p-3 bg-red-50 text-red-800 rounded-xl border border-red-100 flex items-start gap-3">
+                  <Trash2 className="w-5 h-5 shrink-0 mt-0.5" />
+                  <div className="text-xs space-y-1 text-left">
+                    <p className="font-bold">¿Está completamente seguro de eliminar esta idea de negocio?</p>
+                    <p className="text-red-700/80">Esta acción no se puede deshacer y el registro se eliminará permanentemente del almacenamiento local de este dispositivo.</p>
+                  </div>
+                </div>
+
+                <div className="bg-neutral-50 border border-neutral-100 rounded-xl p-4 space-y-2 text-left">
+                  <div className="grid grid-cols-3 gap-1 text-[11px]">
+                    <span className="text-neutral-400 font-bold uppercase">Código:</span>
+                    <span className="col-span-2 text-neutral-800 font-mono font-bold">{formToDelete.codigoIdea}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 text-[11px]">
+                    <span className="text-neutral-400 font-bold uppercase">Idea/Proyecto:</span>
+                    <span className="col-span-2 text-neutral-800 font-bold">{formToDelete.nombreIdea || 'Sin nombre'}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 text-[11px]">
+                    <span className="text-neutral-400 font-bold uppercase">Emprendedor:</span>
+                    <span className="col-span-2 text-neutral-600 font-medium">{formToDelete.nombresCompletos || 'Anónimo'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="px-6 pb-6 pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmId(null)}
+                  className="flex-1 border border-neutral-200 hover:bg-neutral-50 text-neutral-700 font-bold text-xs py-2.5 rounded-xl transition-colors cursor-pointer text-center"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2.5 rounded-xl transition-colors shadow-md shadow-red-900/10 cursor-pointer text-center"
+                >
+                  Eliminar Registro
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Floating Log Console Control Button (Hidden when printing) */}
       {role === 'admin' && (

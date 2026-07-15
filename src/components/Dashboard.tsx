@@ -101,11 +101,11 @@ export default function Dashboard({
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[#39A900] animate-pulse"></span>
             <span className="text-[10px] font-black uppercase tracking-wider text-[#39A900]">
-              Sistema de Recopilación Tecnoparque Nodo Socorro
+              Sistema de Recopilación Tecnoparque SENA
             </span>
           </div>
           <h1 className="text-xl font-bold tracking-tight text-white mt-1">
-            Formulación de Ideas 
+            Formulación de Ideas & Proyectos Offline-First
           </h1>
           <p className="text-neutral-400 text-xs mt-1 max-w-xl">
             Herramienta móvil de campo diseñada para registrar ideas de negocio de aprendices y ciudadanos en regiones sin conectividad, sincronizándolas de forma automática al detectar red.
@@ -426,7 +426,7 @@ export default function Dashboard({
                   </div>
                   {scriptUrl === 'https://script.google.com/macros/s/AKfycbyjwyTtUONyKg40nf4hm-8f6jQbFhuJdNAlerSMqKrVoqTCZSrUM1DAwOtE_POi9ZKb/exec' ? (
                     <span className="block text-[9px] text-emerald-600 font-bold">
-                      ✓ Utilizando la URL predeterminada central de Tecnoparque Nodo Socorro.
+                      ✓ Utilizando la URL predeterminada central de Tecnoparque Colombia.
                     </span>
                   ) : (
                     <span className="block text-[9px] text-neutral-400">

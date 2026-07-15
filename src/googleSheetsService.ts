@@ -314,3 +314,103 @@ export async function syncFormToScript(scriptUrl: string, form: FormularioSena):
   });
 }
 
+/**
+ * Fetches all row records from the Google Sheet and maps them back to FormularioSena objects.
+ */
+export async function fetchFormsFromSheet(
+  accessToken: string,
+  spreadsheetId: string
+): Promise<FormularioSena[]> {
+  const sheetName = await getFirstSheetName(accessToken, spreadsheetId);
+  const encodedSheet = encodeURIComponent(sheetName);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheet}!A2:Q10000`;
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Error leyendo registros de la hoja de cálculo: ${errText}`);
+  }
+
+  const data = await response.json();
+  const rows = data.values || [];
+
+  return rows.map((row: any[]) => {
+    const id = row[0] || `import-${Math.random().toString(36).substr(2, 9)}`;
+    const code = row[1] || '';
+    const date = row[2] || new Date().toISOString();
+    return {
+      id,
+      createdAt: date,
+      updatedAt: date,
+      status: 'synced' as const,
+      nombresCompletos: row[3] || '',
+      tipoDocumento: row[4] || '',
+      numeroDocumento: row[5] || '',
+      paisExpedicion: 'Colombia',
+      fechaExpedicion: '',
+      deptoExpedicion: '',
+      ciudadExpedicion: '',
+      fechaNacimiento: '',
+      grupoSanguineo: '',
+      genero: '',
+      correo: row[6] || '',
+      celular: row[7] || '',
+      estrato: '',
+      grupoPoblacional: '',
+      nombreEps: '',
+      discapacidad: '',
+      cabezaFamilia: '',
+      victimaViolencia: '',
+      deptoResidencia: row[8] || '',
+      ciudadResidencia: row[9] || '',
+      barrio: '',
+
+      nombreInstitucion: '',
+      gradoEscolaridad: '',
+      tituloObtenido: '',
+      fechaTerminacion: '',
+      ocupacion: '',
+
+      nombreIdea: row[10] || '',
+      codigoIdea: code,
+      descripcionIdea: row[12] || '',
+      solucionParecida: '',
+      reemplazaExistente: '',
+      cuentaPmv: (row[13] === 'Sí' || row[13] === 'No' || row[13] === '') ? row[13] as any : '',
+      pruebasClientes: (row[14] === 'Sí' || row[14] === 'No' || row[14] === '') ? row[14] as any : '',
+      estadoActual: '',
+      entiendeModelo: false,
+
+      quienUsara: '',
+      necesidadesClientes: '',
+      problemaClientes: '',
+
+      requiereEmpaque: '',
+      estrategiaPrecio: '',
+
+      recursosPuestaMarcha: '',
+      generadoVentas: (row[15] === 'Sí' || row[15] === 'No' || row[15] === '') ? row[15] as any : '',
+      apoyoEscalabilidad: '',
+
+      equipoTrabajo: row[16] || '',
+      requisitosLegales: '',
+      descripcionRequisitosLegales: '',
+      requierePermisos: '',
+      descripcionPermisos: '',
+      constitucionInteres: '',
+      enlaceVideo: '',
+      estadoPrototipo: '',
+
+      categoriaIdea: row[11] || '',
+      vieneConvocatoria: '',
+      descripcionConvocatoria: '',
+      avaladaEntidad: '',
+      nombreEntidadAval: '',
+      aceptaTratamientoDatos: true,
+    };
+  });
+}
+
